@@ -8,8 +8,6 @@
 
 #include "array_ptr.h"
 
-using namespace std;
-
 class ReserveProxyObj {
 public:
     ReserveProxyObj(const size_t capacity_to_reserve) 
@@ -31,6 +29,7 @@ ReserveProxyObj Reserve(const size_t capacity_to_reserve) {
 template <typename Type>
 class SimpleVector {
 public:
+    using ArrayPtrT = ArrayPtr<Type>;
     using Iterator = Type*;
     using ConstIterator = const Type*;
 
@@ -51,12 +50,12 @@ public:
 
     SimpleVector(std::initializer_list<Type> init) : items_(init.size()) , size_(init.size()) , capacity_(init.size())
     {
-        ConstructorAssistant(init);
+        InitializeFromContainer(init);
     }
     
     SimpleVector(const SimpleVector& other): items_(other.size_) , size_(other.size_) , capacity_(other.size_)
     {
-        ConstructorAssistant(other);
+        InitializeFromContainer(other);
     }
     
     SimpleVector(SimpleVector&& other){
@@ -103,7 +102,7 @@ public:
     }
     
     template <typename Container>
-    void ConstructorAssistant(Container& other) {
+    void InitializeFromContainer(Container& other) {
         std::copy(other.begin(), other.end(), items_.Get());
     }
 
@@ -160,9 +159,11 @@ public:
             auto new_capacity = max(new_size, 2 * capacity_);
             ArrayPtr<Type> arr_ptr(new_capacity);
             move(&items_[0], &items_[size_], &arr_ptr[0]);
+
             for (auto it = &arr_ptr[size_]; it != &arr_ptr[new_size]; ++it) {
                 *(it) = move(Type{});
             }
+            
             items_.swap(arr_ptr);
             capacity_ = new_capacity;
         }
@@ -288,7 +289,7 @@ public:
     }
     
 private:
-    ArrayPtr<Type> items_;
+    ArrayPtrT items_;
     size_t size_ = 0;
     size_t capacity_ = 0;
 };
